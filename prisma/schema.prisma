@@ -1,0 +1,340 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model usuarios {
+  id                 Int     @id @default(autoincrement())
+  nome               String
+  email              String  @unique
+  password           String
+  usuarioTransacaoId Int
+  ativo              Boolean @default(true)
+
+  naturezas                   naturezas[]
+  andamentos                  andamentos[]
+  empresas                    empresas[]
+  clientes                    clientes[]
+  comarcas                    comarcas[]
+  advogados                   advogados[]
+  processos                   processos[]
+  clientesConsignado          clientesConsignado[]
+  verbasConsignado            verbasConsignado[]
+  aliquotaINSS                aliquotaINSS[]
+  indiceINPC                  indiceINPC[]
+  indiceIPCAE                 indiceIPCAE[]
+  indiceSELIC                 indiceSELIC[]
+  clientesAuxilioMoradia      clientesAuxilioMoradia[]
+  contribuicoesAuxilioMoradia contribuicoesAuxilioMoradia[]
+  clientesRestituicao         clientesRestituicao[]
+  contribuicoesRestituicao    contribuicoesRestituicao[]
+  bancos                      bancos[]
+}
+
+model advogados {
+  id                 Int    @id @default(autoincrement())
+  nome               String @unique
+  usuarioTransacaoId Int
+
+  usuarioTransacao usuarios    @relation(fields: [usuarioTransacaoId], references: [id])
+  processos        processos[]
+}
+
+model naturezas {
+  id                 Int     @id @default(autoincrement())
+  descricao          String  @unique
+  usuarioTransacaoId Int
+  ativo              Boolean @default(true)
+
+  usuarioTransacao usuarios    @relation(fields: [usuarioTransacaoId], references: [id])
+  processos        processos[]
+}
+
+model andamentos {
+  id                 Int     @id @default(autoincrement())
+  descricao          String  @unique
+  usuarioTransacaoId Int
+  ativo              Boolean @default(true)
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id])
+
+  despachos despachos[]
+}
+
+model empresas {
+  id                 Int     @id @default(autoincrement())
+  nome               String  @unique
+  usuarioTransacaoId Int
+  ativo              Boolean @default(true)
+
+  usuarioTransacao usuarios    @relation(fields: [usuarioTransacaoId], references: [id])
+  processos        processos[]
+}
+
+model clientes {
+  id                 Int    @id @default(autoincrement())
+  nome               String
+  cpf                String @unique
+  usuarioTransacaoId Int
+
+  usuarioTransacao usuarios    @relation(fields: [usuarioTransacaoId], references: [id])
+  processos        processos[]
+}
+
+model comarcas {
+  id                 Int     @id @default(autoincrement())
+  municipio          String
+  estado             String
+  descricao          String
+  tipo               String
+  usuarioTransacaoId Int
+  ativo              Boolean @default(true)
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id])
+
+  processoPrincipal processos[] @relation(name: "ProcessoPrincipal")
+  processoFilho     processos[] @relation(name: "ProcessoFilho")
+}
+
+model processos {
+  id                             Int     @id @default(autoincrement())
+  numeroProcessoPrincipal        String
+  tipoProcessoPrincipal          String
+  dataIntimacao                  String?
+  dataSentenca                   String?
+  dataPagamentoProcessoPrincipal String?
+  dataInicioBeneficio            String?
+  dataInicioPagamentoBeneficio   String?
+  valorRendaMensalInicial        Float?
+  observacoesProcessoPrincipal   String?
+  numeroProcessoFilho            String?
+  tipoProcessoFilho              String?
+  dataPagamentoProcessoFilho     String?
+  valorProcessoFilho             Float?
+  valorHonorariosProcessoFilho   Float?
+  banco                          String?
+  observacoesProcessoFilho       String?
+  naturezaId                     Int
+  clienteId                      Int
+  empresaId                      Int
+  advogadoId                     Int
+  comarcaProcessoPrincipalId     Int
+  comarcaProcessoFilhoId         Int?
+  usuarioTransacaoId             Int
+  processoPrincipalId            Int?
+
+  natureza                 naturezas @relation(fields: [naturezaId], references: [id])
+  comarcaProcessoPrincipal comarcas  @relation(name: "ProcessoPrincipal", fields: [comarcaProcessoPrincipalId], references: [id])
+  comarcaProcessoFilho     comarcas? @relation(name: "ProcessoFilho", fields: [comarcaProcessoFilhoId], references: [id])
+  cliente                  clientes  @relation(fields: [clienteId], references: [id])
+  empresa                  empresas  @relation(fields: [empresaId], references: [id])
+  advogado                 advogados @relation(fields: [advogadoId], references: [id])
+  usuarioTransacao         usuarios  @relation(fields: [usuarioTransacaoId], references: [id])
+
+  despachos despachos[]
+}
+
+model despachos {
+  id                 Int     @id @default(autoincrement())
+  dataDespacho       String
+  observacao         String
+  processoId         Int
+  andamentoId        Int
+  usuarioTransacaoId Int
+  dataValidade       String?
+
+  processo  processos  @relation(fields: [processoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  andamento andamentos @relation(fields: [andamentoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model clientesConsignado {
+  id                   Int      @id @default(autoincrement())
+  nome                 String
+  cpf                  String   @unique
+  referencia           String?
+  pis_pasep            String?  @unique
+  carteira_identidade  String?
+  cargo                String?
+  regime_juridico      String?
+  situacao_funcionario String?
+  tipo_cargo           String?
+  valor_honorario      Float?
+  descricao_honorario  String?
+  status_honorario     Boolean?
+  usuarioTransacaoId   Int
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  verbasConsignado verbasConsignado[]
+}
+
+enum tipoVerba {
+  PROVENTO
+  DESCONTO
+}
+
+model verbasConsignado {
+  id                                 Int       @id @default(autoincrement())
+  codigo_verba                       String?
+  descricao                          String
+  tipo                               tipoVerba
+  quantidade_atual                   Int?
+  quantidade_total                   Int?
+  valor                              Float
+  desconto_obrigatorio_excecao_legal Boolean   @default(false)
+  clienteConsignadoId                Int
+  usuarioTransacaoId                 Int
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id])
+
+  clienteConsignado clientesConsignado @relation(fields: [clienteConsignadoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model aliquotaINSS {
+  id                 Int   @id @default(autoincrement())
+  ano                Int
+  mes                Int
+  aliquota           Float
+  faixa              Float
+  teto               Float
+  tetoCooperativa    Float
+  usuarioTransacaoId Int
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id])
+}
+
+model indiceINPC {
+  id                 Int   @id @default(autoincrement())
+  ano                Int
+  mes                Int
+  valor              Float
+  usuarioTransacaoId Int
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id])
+}
+
+model indiceIPCAE {
+  id                 Int   @id @default(autoincrement())
+  ano                Int
+  mes                Int
+  valor              Float
+  usuarioTransacaoId Int
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id])
+}
+
+model indiceSELIC {
+  id                 Int   @id @default(autoincrement())
+  ano                Int
+  mes                Int
+  valor              Float
+  usuarioTransacaoId Int
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id])
+}
+
+model clientesAuxilioMoradia {
+  id                        Int     @id @default(autoincrement())
+  nome                      String
+  pis                       String  @unique
+  cpf                       String  @unique
+  dataNascimento            String?
+  honorariosSucumbenciais   Float?
+  textoImportado            String?
+  dataInicioAuxilioMoradia  String?
+  dataFimAuxilioMoradia     String?
+  dataCitacaoAuxilioMoradia String?
+  usuarioTransacaoId        Int
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id])
+
+  contribuicoesAuxilioMoradia contribuicoesAuxilioMoradia[]
+}
+
+model contribuicoesAuxilioMoradia {
+  id                          Int    @id @default(autoincrement())
+  clienteAuxilioMoradiaId     Int
+  ano                         Int
+  mes                         Int
+  base                        Float
+  empresa                     String
+  valorAuxilioMoradia         Float
+  valorRecebidoAuxilioMoradia Float  @default(0)
+  indiceINPC                  Float  @default(0)
+  valorCorrecaoINPC           Float  @default(0)
+  indiceIPCAE                 Float  @default(0)
+  valorCorrecaoIPCAE          Float  @default(0)
+  indiceSELIC                 Float  @default(0)
+  valorCorrecaoSELIC          Float  @default(0)
+  usuarioTransacaoId          Int
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id])
+
+  clienteAuxilioMoradia clientesAuxilioMoradia @relation(fields: [clienteAuxilioMoradiaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model clientesRestituicao {
+  id                      Int     @id @default(autoincrement())
+  nome                    String
+  pis                     String
+  cpf                     String
+  dataNascimento          String?
+  dataProcesso            String?
+  dataSentenca            String?
+  dataInicioContribuicoes String
+  honorariosSucumbenciais Float?
+  bancoId                 String?
+  agencia                 String?
+  tipoContaBancaria       String?
+  numeroContaBancaria     String?
+  digitoContaBancaria     String?
+  ddd                     Int?
+  telefone                Int?
+  senhaECAC               String?
+  usuarioTransacaoId      Int
+  textoImportado          String?
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id])
+  banco            bancos?  @relation(fields: [bancoId], references: [codigo])
+
+  contribuicoesRestituicao contribuicoesRestituicao[]
+}
+
+model contribuicoesRestituicao {
+  id                        Int      @id @default(autoincrement())
+  clienteRestituicaoId      Int
+  ano                       Int
+  mes                       Int
+  empresa                   String
+  base                      Float
+  aliquotaINSS              Float
+  valorDesconto             Float    @default(0)
+  beneficio                 Boolean?
+  rpps                      Boolean?
+  cooperativa               Boolean?
+  contribuinteIndividual11  Boolean?
+  contribuinteIndividual20  Boolean?
+  contribuicaoPersonalizada Boolean?
+  dataPagamentoGPS          String?
+  mei                       Boolean?
+  usuarioTransacaoId        Int
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id])
+
+  clienteRestituicao clientesRestituicao @relation(fields: [clienteRestituicaoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model bancos {
+  id                 Int    @id @default(autoincrement())
+  codigo             String @unique
+  nome               String
+  usuarioTransacaoId Int
+
+  usuarioTransacao usuarios @relation(fields: [usuarioTransacaoId], references: [id])
+
+  clientesRestituicao clientesRestituicao[]
+}
